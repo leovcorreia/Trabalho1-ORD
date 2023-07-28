@@ -2,6 +2,7 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 #define TAM_MINIMO_SOBRA 10  // Tamanho mínimo que a sobra de um registro deve possuir para ser reaproveitada
 
 typedef enum {False, True} booleano;
@@ -9,30 +10,33 @@ typedef enum {False, True} booleano;
 void impressao_da_led(FILE* arquivo_de_dados);
 void fazer_operacoes(FILE* arquivo_de_dados, FILE* arquivo_de_operacoes);
 
-int main(int argc, char** argv)
-{
+int main(int argc, char *argv[]) {
 
-    // Abrir aquivo 'dados.dat' aqui
+    if (argc == 3 && strcmp(argv[1], "-e") == 0) {
 
-    if (argc < 2 || argc > 3)
-    {
-        printf("\nQuantidade de argumentos inválida para o programa");
-        return 0;
-    }
-    else if (argc == 2 && strcmp(argv[1], "-p") == 0)
-    {
-        // impressao_da_led(arquivo_dados_aberto);
-    }
-    else if (argc == 3 && strcmp(argv[1], "-e") == 0)
-    {
-        // abrir arquivo de operacoes (nome esta em argv[2])
-        // fazer_operacoes(arquivo_de_operacoes_aberto);
-    }
-    else{
-        printf("\nNão foram reconhecidos os parâmetros passados para o programa");
-        return 0;
+        printf("Modo de execucao de operacoes ativado ... nome do arquivo = %s\n", argv[2]);
+        // chamada da funcao que executa o arquivo de operacoes
+        // o nome do arquivo de operacoes estara armazenado na variavel argv[2]
+        // executa_operacoes(argv[2])
+
+    } else if (argc == 2 && strcmp(argv[1], "-p") == 0) {
+
+        printf("Modo de impressao da LED ativado ...\n");
+        // chamada da funcao que imprime as informacoes da led
+        // imprime_led();
+
+    } else {
+
+        fprintf(stderr, "Argumentos incorretos!\n");
+        fprintf(stderr, "Modo de uso:\n");
+        fprintf(stderr, "$ %s -e nome_arquivo\n", argv[0]);
+        fprintf(stderr, "$ %s -p\n", argv[0]);
+        exit(EXIT_FAILURE);
+
     }
 
+    return 0;
+}
     // Proposta de heurística
     /*
     MAIN
@@ -69,6 +73,3 @@ int main(int argc, char** argv)
     */
 
     // Pro windows não fechar o CMD imediatamente 
-    int x; scanf("%d", &x);
-    return 0;
-}
