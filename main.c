@@ -1,12 +1,38 @@
 // Arquivo principal do trabalho
 
 #include <stdio.h>
+#include <string.h>
 #define TAM_MINIMO_SOBRA 10  // Tamanho mínimo que a sobra de um registro deve possuir para ser reaproveitada
 
 typedef enum {False, True} booleano;
 
-int main()
+void impressao_da_led(FILE* arquivo_de_dados);
+void fazer_operacoes(FILE* arquivo_de_dados, FILE* arquivo_de_operacoes);
+
+int main(int argc, char** argv)
 {
+
+    // Abrir aquivo 'dados.dat' aqui
+
+    if (argc < 2 || argc > 3)
+    {
+        printf("\nQuantidade de argumentos inválida para o programa");
+        return 0;
+    }
+    else if (argc == 2 && strcmp(argv[1], "-p") == 0)
+    {
+        // impressao_da_led(arquivo_dados_aberto);
+    }
+    else if (argc == 3 && strcmp(argv[1], "-e") == 0)
+    {
+        // abrir arquivo de operacoes (nome esta em argv[2])
+        // fazer_operacoes(arquivo_de_operacoes_aberto);
+    }
+    else{
+        printf("\nNão foram reconhecidos os parâmetros passados para o programa");
+        return 0;
+    }
+
     // Proposta de heurística
     /*
     MAIN
@@ -41,5 +67,8 @@ int main()
     FAZER_REMOCAO
     (A implementar) Remover registro e colocar seu offset na LED (que está decrescente) na posição correta
     */
+
+    // Pro windows não fechar o CMD imediatamente 
+    int x; scanf("%d", &x);
     return 0;
 }
