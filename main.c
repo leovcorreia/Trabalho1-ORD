@@ -49,7 +49,7 @@ int main(int argc, char *argv[]) {
     } else if (argc == 2 && strcmp(argv[1], "-p") == 0) {
 
         printf("Modo de impressao da LED ativado ...\n");
-        imprime_led(arquivo_de_dados);
+        //imprime_led(arquivo_de_dados);
 
     } else {
         fprintf(stderr, "Argumentos incorretos!\n");
@@ -63,22 +63,6 @@ int main(int argc, char *argv[]) {
 }
     // Proposta de heurística
     /*
-    MAIN
-    1- Pegar o modo de operação dos argcs e argvs
-    2- Verificar e abrir o arquivo 'dados.dat' (caso n exista, dar erro)
-    3- Se o modo de operação for '-e'
-    4- -- fazer_operacoes()
-    5- Senão, Se o modo de operação for '-p'
-    6- -- impressao_da_led()
-    7- Senão, dar um erro
-
-    FAZER_OPERACOES
-    1- para cada linha do arquivo de operações:
-    2- -- se a linha comeca com b, fazer_busca()
-    3- -- se a linha comeca com i, fazer_insercao()
-    4- -- se a linha comeca com r, fazer_remocao()
-    5- -- se a linha comeca com outra coisa (e nao for fim do arquivo), exibir erro [ou fazer nada]
-
     IMPRESSAO_DA_LED
     1- se o offset for '-1'
     2- -- imprima "offset: -1"
@@ -95,3 +79,40 @@ int main(int argc, char *argv[]) {
     FAZER_REMOCAO
     (A implementar) Remover registro e colocar seu offset na LED (que está decrescente) na posição correta
     */
+
+void fazer_operacoes(FILE* arquivo_de_dados, FILE* arquivo_de_operacoes)
+{
+    /*
+    Lê e interpreta cada linha de comando descrita no arquivo de operações.
+    */
+    char comando;
+    char parametro[1024];
+
+    while (comando = fgetc(arquivo_de_operacoes), comando != EOF)
+    {
+        fseek(arquivo_de_operacoes, 1, SEEK_CUR);
+        fgets(parametro, 1024, arquivo_de_operacoes);
+        int tamanho_parametro = strlen(parametro);
+        
+        if (parametro[tamanho_parametro - 1] == '\n')
+        {
+            parametro[tamanho_parametro - 1] = '\0';
+        }
+
+        switch (comando)
+        {
+            case 'r':
+                remover_registro(parametro);
+                break;  
+            case 'i': 
+                inserir_registro(parametro);
+                break;
+            case 'b': 
+                buscar_registro(parametro);
+                break;
+            default:
+                printf("\nA operacao '%c' nao e uma operacao valida", comando);
+                break;
+        }  
+    }
+}
