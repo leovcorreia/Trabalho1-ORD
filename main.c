@@ -178,7 +178,15 @@ void inserir_espaco_na_led(int offset, int tamanho, FILE* arquivo_de_dados)
         le_dados_led(aponta_atual, arquivo_de_dados, &tamanho_proximo, &aponta_proximo);
     }
 
-    fseek(arquivo_de_dados, aponta_antigo + sizeof(int) + 1, SEEK_SET);
+    if (aponta_antigo != -1)
+    {
+        fseek(arquivo_de_dados, aponta_antigo + sizeof(int) + 1, SEEK_SET);
+    }
+    else
+    {
+        fseek(arquivo_de_dados, aponta_atual + sizeof(int) + 1, SEEK_SET);
+    }
+    
     fwrite(&offset, sizeof(int), 1, arquivo_de_dados);
 
     fseek(arquivo_de_dados, offset + sizeof(int) + 1, SEEK_SET);
