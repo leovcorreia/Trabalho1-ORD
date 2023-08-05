@@ -63,24 +63,6 @@ int main(int argc, char *argv[]) {
     fclose(arquivo_de_dados);
     return 0;
 }
-    // Proposta de heurística
-    /*
-    IMPRESSAO_DA_LED
-    1- se o offset for '-1'
-    2- -- imprima "offset: -1"
-    3- caso contrario:
-    4- -- imprima o offset e o tamanho do registro
-    5- -- IMPRESSAO_DA_LED(novo_offset_lido)
-
-    FAZER_BUSCA
-    (A implementar) É uma busca sequencial simples
-
-    FAZER_INSERCAO
-    (A implementar) Verificar primeiro elemento da LED -> se couber, blz! (e checar tamanho restante) -> senão, coloque no final
-
-    FAZER_REMOCAO
-    (A implementar) Remover registro e colocar seu offset na LED (que está decrescente) na posição correta
-    */
 
 void fazer_operacoes(FILE* arquivo_de_dados, FILE* arquivo_de_operacoes)
 {
@@ -104,15 +86,19 @@ void fazer_operacoes(FILE* arquivo_de_dados, FILE* arquivo_de_operacoes)
         switch (comando)
         {
             case 'r':
+                printf("\n");
                 remover_registro(parametro, arquivo_de_dados);
                 break;  
             case 'i': 
+                printf("\n");
                 inserir_registro(parametro, arquivo_de_dados);
                 break;
-            case 'b': 
+            case 'b':
+                printf("\n"); 
                 //buscar_registro(parametro, arquivo_de_dados);
                 break;
             default:
+                printf("\n");
                 printf("\nA operacao '%c' nao e uma operacao valida", comando);
                 break;
         }  
@@ -120,12 +106,27 @@ void fazer_operacoes(FILE* arquivo_de_dados, FILE* arquivo_de_operacoes)
 }
 
 
-void ler_nome_registro(char *registro, char **nome)
+void ler_nome_registro(char *registro, char *nome)
 {
-    *nome = strtok(registro, "|");
+    // Ler identificador do registro
+    // *nome = strtok(registro, "|");
+    //printf("\nLendo nome do registro [%s]", registro);
+
+    if (registro[0] == '*')
+    {
+        nome[0] = '\0';
+    }
+
+    int i = 0;
+    while (registro[i] != '|' && registro[i] != '\0')
+    {
+        nome[i] = registro[i];
+        i++;
+    }
+    nome[i] = '\0';
 }
 
-// AINDA PRECISA SER TESTADA
+
 void le_dados_led(int offset, FILE* arquivo_de_dados, short *tamanho, int *proximo_ponteiro)
 {
     fseek(arquivo_de_dados, offset, SEEK_SET);
@@ -216,9 +217,9 @@ void inserir_registro(char* novo_registro, FILE* arquivo_de_dados)
     /*
     Insere um novo registro no arquivo
     */
-    char *nome_registro;
+    char nome_registro[64];
 
-    ler_nome_registro(novo_registro, &nome_registro);
+    ler_nome_registro(novo_registro, nome_registro);
 
     short tamanho_novo_registro = strlen(novo_registro);
 
@@ -253,10 +254,11 @@ void inserir_registro(char* novo_registro, FILE* arquivo_de_dados)
         {
             fseek(arquivo_de_dados, 1, SEEK_CUR); // Pulando o '*'
             int proximo_ponteiro_led;
+
             fread(&proximo_ponteiro_led, sizeof(int), 1, arquivo_de_dados); // Lendo o proximo ponteiro da led
-            fseek(arquivo_de_dados, -(1 + sizeof(short)), SEEK_CUR); // Voltando para o íncio do local onde o registro deverá ser escrito
-            
-            printf("\nLocal de insercao: offset = %s bytes", offset_atual_led);
+            fseek(arquivo_de_dados, offset_atual_led, SEEK_SET); // Voltando para o íncio do local onde o registro deverá ser escrito
+
+            printf("\nLocal de insercao: offset = %d bytes", offset_atual_led);
             // Escrevendo o novo registro
             fwrite(&tamanho_novo_registro, sizeof(short), 1, arquivo_de_dados);
             fwrite(novo_registro, tamanho_novo_registro, 1, arquivo_de_dados);
@@ -280,7 +282,7 @@ void inserir_registro(char* novo_registro, FILE* arquivo_de_dados)
             }
             else
             {
-                printf("\nA sobra nao era grande suficiente para ser reutilizada");
+                printf("\nA sobra era pequena demais para ser reutilizada");
             }
         }
     }
@@ -295,7 +297,7 @@ void remover_registro(char* identificador, FILE* arquivo_de_dados)
     
     printf("\nRemocao do registro de chave \"%s\"", identificador);
 
-    char *identificador_atual;
+    char identificador_atual[64];
     char buffer[256];
 
     fseek(arquivo_de_dados, sizeof(int), SEEK_SET);  // Garantindo que o ponteiro de entrada esteja no início do primeiro registro
@@ -308,11 +310,11 @@ void remover_registro(char* identificador, FILE* arquivo_de_dados)
 
     do
     {   
-        res = fread(&tamanho_registro, sizeof(short), 1, arquivo_de_dados);
+        fread(&tamanho_registro, sizeof(short), 1, arquivo_de_dados);
 
         fread(buffer, sizeof(char), tamanho_registro, arquivo_de_dados);
 
-        ler_nome_registro(buffer, &identificador_atual);
+        ler_nome_registro(buffer, identificador_atual);
 
         if (strcmp(identificador_atual, identificador) == 0)
         {
@@ -324,7 +326,7 @@ void remover_registro(char* identificador, FILE* arquivo_de_dados)
 
         posicao_do_ponteiro_de_leitura += sizeof(short) + tamanho_registro;
 
-    } while (res != EOF);
+    } while (0 == feof(arquivo_de_dados));
 
     printf("\nErro: o registro nao foi encontrado");
 }
