@@ -16,7 +16,7 @@
 typedef enum {False, True} booleano;  // Enum booleano para deixar o código mais limpo caso seja necessário
 
 // Funções auxiliares
-void inserir_espaco_na_led(int offset, int tamanho, FILE* arquivo_de_dados);
+void inserir_espaco_na_led(int offset, short tamanho, FILE* arquivo_de_dados);
 
 // Funções de registros
 void inserir_registro(char* novo_registro, FILE* arquivo_de_dados);  // A implementar
@@ -110,7 +110,7 @@ void fazer_operacoes(FILE* arquivo_de_dados, FILE* arquivo_de_operacoes)
                 inserir_registro(parametro, arquivo_de_dados);
                 break;
             case 'b': 
-                buscar_registro(parametro, arquivo_de_dados);
+                //buscar_registro(parametro, arquivo_de_dados);
                 break;
             default:
                 printf("\nA operacao '%c' nao e uma operacao valida", comando);
@@ -119,17 +119,23 @@ void fazer_operacoes(FILE* arquivo_de_dados, FILE* arquivo_de_operacoes)
     }
 }
 
-// AINDA PRECISA SER TESTADA
-void le_dados_led(int offset, FILE* arquivo_de_dados, int *tamanho, int *proximo_ponteiro)
+
+void ler_nome_registro(char *registro, char **nome)
 {
-    fseek(arquivo_de_dados, offset, SEEK_SET);
-    fread(tamanho, sizeof(int), 1, arquivo_de_dados);
-    fseek(arquivo_de_dados, 1, SEEK_CUR);
-    fread(proximo_ponteiro, sizeof(int), 1, arquivo_de_dados);
+    *nome = strtok(registro, "|");
 }
 
 // AINDA PRECISA SER TESTADA
-void inserir_espaco_na_led(int offset, int tamanho, FILE* arquivo_de_dados)
+void le_dados_led(int offset, FILE* arquivo_de_dados, short *tamanho, int *proximo_ponteiro)
+{
+    fseek(arquivo_de_dados, offset, SEEK_SET);
+    fread(tamanho, sizeof(short), 1, arquivo_de_dados);
+    fseek(arquivo_de_dados, 1, SEEK_CUR);  // Pulando o '*'
+    fread(proximo_ponteiro, sizeof(int), 1, arquivo_de_dados);
+}
+
+
+void inserir_espaco_na_led(int offset, short tamanho, FILE* arquivo_de_dados)
 {
     /*
     Insere um espaço vazio na LED.
@@ -137,18 +143,18 @@ void inserir_espaco_na_led(int offset, int tamanho, FILE* arquivo_de_dados)
     'Tamanho' deve incluir o espaco para o '*' e o tamanho no inicio
     */
     fseek(arquivo_de_dados, offset, SEEK_SET);
-    int tamanho_para_registro = tamanho - sizeof(int);
-    fwrite(&tamanho_para_registro, sizeof(int), 1, arquivo_de_dados);
+    short tamanho_para_registro = tamanho - sizeof(short);
+    fwrite(&tamanho_para_registro, sizeof(short), 1, arquivo_de_dados);
     fwrite("*", sizeof(char), 1, arquivo_de_dados);
 
     // Conectar na LED
-    int tamanho_antigo = -1;
+    short tamanho_antigo = -1;
     int aponta_antigo = -1;
     
-    int tamanho_atual = -1;
+    short tamanho_atual = -1;
     int aponta_atual = -1;
 
-    int tamanho_proximo = -1;
+    short tamanho_proximo = -1;
     int aponta_proximo = -1;
 
     fseek(arquivo_de_dados, 0, SEEK_SET); // Vai para o inicio do arquivo
@@ -158,7 +164,7 @@ void inserir_espaco_na_led(int offset, int tamanho, FILE* arquivo_de_dados)
     {
         fseek(arquivo_de_dados, 0, SEEK_SET);
         fwrite(&offset, sizeof(int), 1, arquivo_de_dados);
-        fseek(arquivo_de_dados, offset + sizeof(int) + 1, SEEK_SET);
+        fseek(arquivo_de_dados, offset + sizeof(short) + 1, SEEK_SET);
         int ptr = -1;
         fwrite(&ptr, sizeof(int), 1, arquivo_de_dados);
         return;
@@ -178,19 +184,30 @@ void inserir_espaco_na_led(int offset, int tamanho, FILE* arquivo_de_dados)
         le_dados_led(aponta_atual, arquivo_de_dados, &tamanho_proximo, &aponta_proximo);
     }
 
-    if (aponta_antigo != -1)
+    if (tamanho_proximo < tamanho_para_registro)
     {
-        fseek(arquivo_de_dados, aponta_antigo + sizeof(int) + 1, SEEK_SET);
+        if (aponta_antigo != -1)
+        {
+            fseek(arquivo_de_dados, aponta_antigo + sizeof(short) + 1, SEEK_SET);
+        }
+        else
+        {
+            fseek(arquivo_de_dados, 0, SEEK_SET);
+        }
+        
+        fwrite(&offset, sizeof(int), 1, arquivo_de_dados);
+
+        fseek(arquivo_de_dados, offset + sizeof(short) + 1, SEEK_SET);
+        fwrite(&aponta_atual, sizeof(int), 1, arquivo_de_dados);
     }
     else
     {
-        fseek(arquivo_de_dados, aponta_atual + sizeof(int) + 1, SEEK_SET);
-    }
-    
-    fwrite(&offset, sizeof(int), 1, arquivo_de_dados);
+        fseek(arquivo_de_dados, aponta_atual + sizeof(short) + 1, SEEK_SET);
+        fwrite(&offset, sizeof(int), 1, arquivo_de_dados);
 
-    fseek(arquivo_de_dados, offset + sizeof(int) + 1, SEEK_SET);
-    fwrite(&aponta_atual, sizeof(int), 1, arquivo_de_dados);
+        fseek(arquivo_de_dados, offset + sizeof(short) + 1, SEEK_SET);
+        fwrite(&aponta_proximo, sizeof(int), 1, arquivo_de_dados);
+    }
 }
 
 // AINDA PRECISA SER TESTADA
@@ -199,28 +216,36 @@ void inserir_registro(char* novo_registro, FILE* arquivo_de_dados)
     /*
     Insere um novo registro no arquivo
     */
-    int tamanho_novo_registro = strlen(novo_registro);
+    char *nome_registro;
+
+    ler_nome_registro(novo_registro, &nome_registro);
+
+    short tamanho_novo_registro = strlen(novo_registro);
+
+    printf("\nInsercao do registro de chave \"%s\" (%d bytes)", nome_registro, tamanho_novo_registro);
 
     fseek(arquivo_de_dados, 0, SEEK_SET);  // Coloca ponteiro de leitura no inicio
 
     int offset_atual_led;
-    int tamanho_atual_led;
+    short tamanho_atual_led;
 
     fread(&offset_atual_led, sizeof(int), 1, arquivo_de_dados);  // Lê o offset do primeiro elemento da LED
 
     if (offset_atual_led == -1)
     {
         // Inserção quando ainda não foi feita nenhuma remoção
+        printf("\nLocal: Fim do arquivo");
         fseek(arquivo_de_dados, 0, SEEK_END);
         fwrite(novo_registro, tamanho_novo_registro, 1, arquivo_de_dados);
     }
     else
     {
         fseek(arquivo_de_dados, offset_atual_led, SEEK_SET);  // Vai até a posição de inserção
-        fread(&tamanho_atual_led, sizeof(int), 1, arquivo_de_dados);
+        fread(&tamanho_atual_led, sizeof(short), 1, arquivo_de_dados);
 
-        if (tamanho_atual_led < tamanho_novo_registro + sizeof(int))  // Sem espaço vazio que caiba o elemento a ser adicionado
+        if (tamanho_atual_led < tamanho_novo_registro + sizeof(short))  // Sem espaço vazio que caiba o elemento a ser adicionado
         {
+            printf("\nLocal: Fim do arquivo");
             fseek(arquivo_de_dados, 0, SEEK_END);
             fwrite(novo_registro, tamanho_novo_registro, 1, arquivo_de_dados);
         }
@@ -229,37 +254,77 @@ void inserir_registro(char* novo_registro, FILE* arquivo_de_dados)
             fseek(arquivo_de_dados, 1, SEEK_CUR); // Pulando o '*'
             int proximo_ponteiro_led;
             fread(&proximo_ponteiro_led, sizeof(int), 1, arquivo_de_dados); // Lendo o proximo ponteiro da led
-            fseek(arquivo_de_dados, -(1 + sizeof(int)), SEEK_CUR); // Voltando para o íncio do local onde o registro deverá ser escrito
-
-            fwrite(&tamanho_novo_registro, sizeof(int), 1, arquivo_de_dados);
+            fseek(arquivo_de_dados, -(1 + sizeof(short)), SEEK_CUR); // Voltando para o íncio do local onde o registro deverá ser escrito
+            
+            printf("\nLocal de insercao: offset = %s bytes", offset_atual_led);
+            // Escrevendo o novo registro
+            fwrite(&tamanho_novo_registro, sizeof(short), 1, arquivo_de_dados);
             fwrite(novo_registro, tamanho_novo_registro, 1, arquivo_de_dados);
 
             fseek(arquivo_de_dados, 0, SEEK_SET); // Voltando para o início do arquivo
             fwrite(&proximo_ponteiro_led, sizeof(int), 1, arquivo_de_dados); // Conectando a ponta inicial da LED com a próxima
 
-            fseek(arquivo_de_dados, offset_atual_led + tamanho_novo_registro + sizeof(int), SEEK_SET); // Voltando para onde o espaço vazio está
+            fseek(arquivo_de_dados, offset_atual_led + tamanho_novo_registro + sizeof(short), SEEK_SET); // Voltando para onde o espaço vazio está
 
-            if (tamanho_atual_led > tamanho_novo_registro + 2*sizeof(int) + 1 + TAM_MINIMO_SOBRA)
+            short sobra = tamanho_atual_led - tamanho_novo_registro;
+
+            printf("\nSobra de %d bytes", sobra);
+            if (sobra > sizeof(int) + sizeof(short) + 1 + TAM_MINIMO_SOBRA)
             {
+                printf("\nA sobra era grande suficiente para ser reutilizada");
                 // Caso ainda haja espaço utilizável
-                // Tamanho novo registro + espaços para guardar o tamanho (int) e o ponteiro da LED (int) + o '*' de removido
+                // Tamanho novo registro + espaços para guardar o tamanho (short) e o ponteiro da LED (int) + o '*' de removido
 
-                inserir_espaco_na_led(offset_atual_led + tamanho_novo_registro + sizeof(int),
+                inserir_espaco_na_led(offset_atual_led + tamanho_novo_registro + sizeof(short),
                 tamanho_atual_led - tamanho_novo_registro, arquivo_de_dados);
+            }
+            else
+            {
+                printf("\nA sobra nao era grande suficiente para ser reutilizada");
             }
         }
     }
 }
+
 
 void remover_registro(char* identificador, FILE* arquivo_de_dados)
 {
     /*
     Remove um registro do arquivo
     */
+    
+    printf("\nRemocao do registro de chave \"%s\"", identificador);
 
-   /*
-   percorre o arquivo ate achar o registro
-   se n achar, de erro
-   se achar, remova ele e coloque seu espaco na led
-   */
+    char *identificador_atual;
+    char buffer[256];
+
+    fseek(arquivo_de_dados, sizeof(int), SEEK_SET);  // Garantindo que o ponteiro de entrada esteja no início do primeiro registro
+
+    short tamanho_registro;
+
+    int res = 1;
+
+    int posicao_do_ponteiro_de_leitura = sizeof(int);
+
+    do
+    {   
+        res = fread(&tamanho_registro, sizeof(short), 1, arquivo_de_dados);
+
+        fread(buffer, sizeof(char), tamanho_registro, arquivo_de_dados);
+
+        ler_nome_registro(buffer, &identificador_atual);
+
+        if (strcmp(identificador_atual, identificador) == 0)
+        {
+            printf("\nRegistro removido!");
+            printf("\nLocal: offset = %d bytes", posicao_do_ponteiro_de_leitura);
+            inserir_espaco_na_led(posicao_do_ponteiro_de_leitura, tamanho_registro + sizeof(short), arquivo_de_dados);
+            return;
+        }
+
+        posicao_do_ponteiro_de_leitura += sizeof(short) + tamanho_registro;
+
+    } while (res != EOF);
+
+    printf("\nErro: o registro nao foi encontrado");
 }
