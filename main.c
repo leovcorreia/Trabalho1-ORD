@@ -12,20 +12,19 @@
 #define TAM_MINIMO_SOBRA 10  // Tamanho mínimo que a sobra de um registro deve possuir para ser reaproveitada
 #define NOME_ARQUIVO_DADOS "dados.dat"
 
-// Se acabar não sendo usado, é bom remover
-typedef enum {False, True} booleano;  // Enum booleano para deixar o código mais limpo caso seja necessário
+typedef enum {False, True} booleano;  // Enum booleano para deixar o código mais limpo
 
 // Funções auxiliares
 void inserir_espaco_na_led(int offset, short tamanho, FILE* arquivo_de_dados);
 
 // Funções de registros
-void inserir_registro(char* novo_registro, FILE* arquivo_de_dados);  // A implementar
-void remover_registro(char* identificador, FILE* arquivo_de_dados);  // A implementar
+void inserir_registro(char* novo_registro, FILE* arquivo_de_dados);  
+void remover_registro(char* identificador, FILE* arquivo_de_dados);  
 void buscar_registro(char* identificador, FILE* arquivo_de_dados);  // A implementar
 
 // Funções de modos de operações
 void impressao_da_led(FILE* arquivo_de_dados);  // A implementar
-void fazer_operacoes(FILE* arquivo_de_dados, FILE* arquivo_de_operacoes);  // A implementar
+void fazer_operacoes(FILE* arquivo_de_dados, FILE* arquivo_de_operacoes); 
 
 int main(int argc, char *argv[]) {
     /*
@@ -63,6 +62,7 @@ int main(int argc, char *argv[]) {
     fclose(arquivo_de_dados);
     return 0;
 }
+
 
 void fazer_operacoes(FILE* arquivo_de_dados, FILE* arquivo_de_operacoes)
 {
@@ -211,7 +211,7 @@ void inserir_espaco_na_led(int offset, short tamanho, FILE* arquivo_de_dados)
     }
 }
 
-// AINDA PRECISA SER TESTADA
+
 void inserir_registro(char* novo_registro, FILE* arquivo_de_dados)
 {
     /*
@@ -244,7 +244,7 @@ void inserir_registro(char* novo_registro, FILE* arquivo_de_dados)
         fseek(arquivo_de_dados, offset_atual_led, SEEK_SET);  // Vai até a posição de inserção
         fread(&tamanho_atual_led, sizeof(short), 1, arquivo_de_dados);
 
-        if (tamanho_atual_led < tamanho_novo_registro + sizeof(short))  // Sem espaço vazio que caiba o elemento a ser adicionado
+        if (tamanho_atual_led < tamanho_novo_registro)  // Sem espaço vazio que caiba o elemento a ser adicionado
         {
             printf("\nLocal: Fim do arquivo");
             fseek(arquivo_de_dados, 0, SEEK_END);
@@ -259,8 +259,25 @@ void inserir_registro(char* novo_registro, FILE* arquivo_de_dados)
             fseek(arquivo_de_dados, offset_atual_led, SEEK_SET); // Voltando para o íncio do local onde o registro deverá ser escrito
 
             printf("\nLocal de insercao: offset = %d bytes", offset_atual_led);
+            
+            booleano sobrou_espaco_suficiente = False;
+
             // Escrevendo o novo registro
-            fwrite(&tamanho_novo_registro, sizeof(short), 1, arquivo_de_dados);
+
+            short sobra = tamanho_atual_led - tamanho_novo_registro;
+
+            if (sobra > TAM_MINIMO_SOBRA)
+            {
+                sobrou_espaco_suficiente = True;
+                // Só escreve um novo tamanho caso haja suficiente para ser reutilizado
+                fwrite(&tamanho_novo_registro, sizeof(short), 1, arquivo_de_dados);
+            }
+            else
+            {
+                // Caso contrário, só passa adiante
+                fseek(arquivo_de_dados, sizeof(short), SEEK_CUR);
+            }
+
             fwrite(novo_registro, tamanho_novo_registro, 1, arquivo_de_dados);
 
             fseek(arquivo_de_dados, 0, SEEK_SET); // Voltando para o início do arquivo
@@ -268,21 +285,13 @@ void inserir_registro(char* novo_registro, FILE* arquivo_de_dados)
 
             fseek(arquivo_de_dados, offset_atual_led + tamanho_novo_registro + sizeof(short), SEEK_SET); // Voltando para onde o espaço vazio está
 
-            short sobra = tamanho_atual_led - tamanho_novo_registro;
-
-            printf("\nSobra de %d bytes", sobra);
-            if (sobra > sizeof(int) + sizeof(short) + 1 + TAM_MINIMO_SOBRA)
+            printf("\nTamanho do espaco reutilizado: %d ", tamanho_atual_led);
+            if (sobra > TAM_MINIMO_SOBRA)
             {
-                printf("\nA sobra era grande suficiente para ser reutilizada");
+                printf("(sobra de %d bytes)", sobra - sizeof(short));
                 // Caso ainda haja espaço utilizável
-                // Tamanho novo registro + espaços para guardar o tamanho (short) e o ponteiro da LED (int) + o '*' de removido
-
                 inserir_espaco_na_led(offset_atual_led + tamanho_novo_registro + sizeof(short),
                 tamanho_atual_led - tamanho_novo_registro, arquivo_de_dados);
-            }
-            else
-            {
-                printf("\nA sobra era pequena demais para ser reutilizada");
             }
         }
     }
@@ -316,9 +325,11 @@ void remover_registro(char* identificador, FILE* arquivo_de_dados)
 
         ler_nome_registro(buffer, identificador_atual);
 
+        int res = strcmp(identificador_atual, identificador);
+
         if (strcmp(identificador_atual, identificador) == 0)
         {
-            printf("\nRegistro removido!");
+            printf("\nRegistro removido! Tamanho: %d bytes", tamanho_registro);
             printf("\nLocal: offset = %d bytes", posicao_do_ponteiro_de_leitura);
             inserir_espaco_na_led(posicao_do_ponteiro_de_leitura, tamanho_registro + sizeof(short), arquivo_de_dados);
             return;
