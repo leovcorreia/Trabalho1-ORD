@@ -49,7 +49,7 @@ int main(int argc, char *argv[]) {
     } else if (argc == 2 && strcmp(argv[1], "-p") == 0) {
 
         printf("Modo de impressao da LED ativado ...\n");
-        //imprime_led(arquivo_de_dados);
+        //impressao_da_led(arquivo_de_dados);
 
     } else {
         fprintf(stderr, "Argumentos incorretos!\n");
@@ -269,6 +269,7 @@ void inserir_registro(char* novo_registro, FILE* arquivo_de_dados)
         // Inserção quando ainda não foi feita nenhuma remoção
         printf("\nLocal: Fim do arquivo");
         fseek(arquivo_de_dados, 0, SEEK_END);
+        fwrite(&tamanho_novo_registro, sizeof(short), 1, arquivo_de_dados);
         fwrite(novo_registro, tamanho_novo_registro, 1, arquivo_de_dados);
     }
     else
@@ -280,6 +281,7 @@ void inserir_registro(char* novo_registro, FILE* arquivo_de_dados)
         {
             printf("\nLocal: Fim do arquivo");
             fseek(arquivo_de_dados, 0, SEEK_END);
+            fwrite(&tamanho_novo_registro, sizeof(short), 1, arquivo_de_dados);
             fwrite(novo_registro, tamanho_novo_registro, 1, arquivo_de_dados);
         }
         else
