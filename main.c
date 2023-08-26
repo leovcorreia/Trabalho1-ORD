@@ -49,7 +49,7 @@ int main(int argc, char *argv[]) {
     } else if (argc == 2 && strcmp(argv[1], "-p") == 0) {
 
         printf("Modo de impressao da LED ativado ...\n");
-        //imprime_led(arquivo_de_dados);
+        //impressao_da_led(arquivo_de_dados);
 
     } else {
         fprintf(stderr, "Argumentos incorretos!\n");
@@ -67,17 +67,27 @@ int main(int argc, char *argv[]) {
 void fazer_operacoes(FILE* arquivo_de_dados, FILE* arquivo_de_operacoes)
 {
     /*
-    Lê e interpreta cada linha de comando descrita no arquivo de operações.
+    Lê e interpreta cada linha de comando descrita no arquivo de operações e executa a função correspondente.
+
+    Parâmetros:
+        FILE* arquivo_de_dados: O descritor do arquivo contento os dados do registros sobre os quais as operações serão realizadas
+        FILE* arquivo_de_operacoes: O descritor do arquivo contendo as operações a serem realizadas junto com os seus argumentos.
     */
     char comando;
-    char parametro[1024];
 
-    while (comando = fgetc(arquivo_de_operacoes), comando != EOF)
+    /* Como não foi especificado um tamanho máximo para os argumentos das operações no arquivo de entrada, assumiu-se que elas podem
+    ter tamanho até o maior valor possível de ser descrito com um tipo short */
+    char parametro[32767];
+
+    while (comando = fgetc(arquivo_de_operacoes), comando != EOF)  // Enquanto ainda houver comandos para serem lidos
     {
+        // Lê o caractere de operação no início do laço, pula o espaço e lê o argumento para a variável parâmetro.
         fseek(arquivo_de_operacoes, 1, SEEK_CUR);
         fgets(parametro, 1024, arquivo_de_operacoes);
+
         int tamanho_parametro = strlen(parametro);
         
+        // fgets coloca a quebra de linha na string, com exceção nos casos em que a última linha termina o arquivo diretamente (sem criar nova linha)
         if (parametro[tamanho_parametro - 1] == '\n')
         {
             parametro[tamanho_parametro - 1] = '\0';
@@ -106,11 +116,15 @@ void fazer_operacoes(FILE* arquivo_de_dados, FILE* arquivo_de_operacoes)
 }
 
 
-void ler_nome_registro(char *registro, char *nome)
+void ler_identificador_registro(char *registro, char *nome)
 {
-    // Ler identificador do registro
-    // *nome = strtok(registro, "|");
-    //printf("\nLendo nome do registro [%s]", registro);
+    /*
+    Recupera a string que serve como identificador de um registro
+    
+    Parâmetros:
+        char* registro: String contendo o registro a ser lido
+        char* nome: String que irá receber o identificador do registro
+    */
 
     if (registro[0] == '*')
     {
@@ -129,6 +143,15 @@ void ler_nome_registro(char *registro, char *nome)
 
 void le_dados_led(int offset, FILE* arquivo_de_dados, short *tamanho, int *proximo_ponteiro)
 {
+    /*
+    Recupera os dados de tamanho e de próximo offset de um dado elemento da LED
+
+    Parâmetros:
+        int offset: O inteiro no qual o elemento da LED a ser lido se inicia
+        FILE* arquivo_de_dados: O arquivo com os dados a ser trabalhado
+        short* tamanho: Uma variável short que irá receber o tamanho do elemento lido
+        int* proximo_ponteiro: Uma variável int que irá receber o offset do próximo elemento da LED
+    */
     fseek(arquivo_de_dados, offset, SEEK_SET);
     fread(tamanho, sizeof(short), 1, arquivo_de_dados);
     fseek(arquivo_de_dados, 1, SEEK_CUR);  // Pulando o '*'
@@ -139,9 +162,12 @@ void le_dados_led(int offset, FILE* arquivo_de_dados, short *tamanho, int *proxi
 void inserir_espaco_na_led(int offset, short tamanho, FILE* arquivo_de_dados)
 {
     /*
-    Insere um espaço vazio na LED.
-    Coloca o tamanho e o asterisco e conecta na LED.
-    'Tamanho' deve incluir o espaco para o '*' e o tamanho no inicio
+    Insere um espaço novamente na LED de forma ordenada.
+    
+    Parâmetros:
+        int offset: O offset inicial de onde se inicia o espaço a ser inserido na LED
+        short tamanho: O tamanho do local a ser inserido na LED (tamanho do registro + 2 bytes para anotá-lo)
+        FILE* arquivo_de_dados: O arquivo com os dados a ser trabalhado
     */
     fseek(arquivo_de_dados, offset, SEEK_SET);
     short tamanho_para_registro = tamanho - sizeof(short);
@@ -161,6 +187,7 @@ void inserir_espaco_na_led(int offset, short tamanho, FILE* arquivo_de_dados)
     fseek(arquivo_de_dados, 0, SEEK_SET); // Vai para o inicio do arquivo
     fread(&aponta_proximo, sizeof(int), 1, arquivo_de_dados);  // Lê o primeiro ponteiro da LED
 
+    // Inserção de espaço quando a LED está vazia
     if (aponta_proximo == -1)
     {
         fseek(arquivo_de_dados, 0, SEEK_SET);
@@ -185,8 +212,9 @@ void inserir_espaco_na_led(int offset, short tamanho, FILE* arquivo_de_dados)
         le_dados_led(aponta_atual, arquivo_de_dados, &tamanho_proximo, &aponta_proximo);
     }
 
-    if (tamanho_proximo < tamanho_para_registro)
+    if (tamanho_proximo < tamanho_para_registro)  // Inserção entre os elementos anterior e atual
     {
+        // Possíveis casos
         if (aponta_antigo != -1)
         {
             fseek(arquivo_de_dados, aponta_antigo + sizeof(short) + 1, SEEK_SET);
@@ -201,7 +229,7 @@ void inserir_espaco_na_led(int offset, short tamanho, FILE* arquivo_de_dados)
         fseek(arquivo_de_dados, offset + sizeof(short) + 1, SEEK_SET);
         fwrite(&aponta_atual, sizeof(int), 1, arquivo_de_dados);
     }
-    else
+    else  // Inserção entre os elementos atual e próximo
     {
         fseek(arquivo_de_dados, aponta_atual + sizeof(short) + 1, SEEK_SET);
         fwrite(&offset, sizeof(int), 1, arquivo_de_dados);
@@ -215,11 +243,15 @@ void inserir_espaco_na_led(int offset, short tamanho, FILE* arquivo_de_dados)
 void inserir_registro(char* novo_registro, FILE* arquivo_de_dados)
 {
     /*
-    Insere um novo registro no arquivo
+    Insere um novo registro no arquivo no arquivo de dados
+
+    Parâmetros:
+        char* novo_registro: string contendo o novo registro a ser adicionado
+        FILE* arquivo_de_dados: O arquivo de dados a ser trabalhado
     */
     char nome_registro[64];
 
-    ler_nome_registro(novo_registro, nome_registro);
+    ler_identificador_registro(novo_registro, nome_registro);
 
     short tamanho_novo_registro = strlen(novo_registro);
 
@@ -237,6 +269,7 @@ void inserir_registro(char* novo_registro, FILE* arquivo_de_dados)
         // Inserção quando ainda não foi feita nenhuma remoção
         printf("\nLocal: Fim do arquivo");
         fseek(arquivo_de_dados, 0, SEEK_END);
+        fwrite(&tamanho_novo_registro, sizeof(short), 1, arquivo_de_dados);
         fwrite(novo_registro, tamanho_novo_registro, 1, arquivo_de_dados);
     }
     else
@@ -248,6 +281,7 @@ void inserir_registro(char* novo_registro, FILE* arquivo_de_dados)
         {
             printf("\nLocal: Fim do arquivo");
             fseek(arquivo_de_dados, 0, SEEK_END);
+            fwrite(&tamanho_novo_registro, sizeof(short), 1, arquivo_de_dados);
             fwrite(novo_registro, tamanho_novo_registro, 1, arquivo_de_dados);
         }
         else
@@ -301,7 +335,11 @@ void inserir_registro(char* novo_registro, FILE* arquivo_de_dados)
 void remover_registro(char* identificador, FILE* arquivo_de_dados)
 {
     /*
-    Remove um registro do arquivo
+    Remove um registro do arquivo de dados
+
+    Parâmetros:
+        char* identificador: string contendo o identificador do elemento a ser removido
+        FILE* arquivo_de_dados: O arquivo de dados a ser trabalhado
     */
     
     printf("\nRemocao do registro de chave \"%s\"", identificador);
@@ -323,7 +361,7 @@ void remover_registro(char* identificador, FILE* arquivo_de_dados)
 
         fread(buffer, sizeof(char), tamanho_registro, arquivo_de_dados);
 
-        ler_nome_registro(buffer, identificador_atual);
+        ler_identificador_registro(buffer, identificador_atual);
 
         int res = strcmp(identificador_atual, identificador);
 
