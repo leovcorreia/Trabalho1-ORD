@@ -1,7 +1,7 @@
 /*
-    Trabalho 1 - Organização e recuperação de dados
+    Trabalho 1 - Organização e Recuperação de Dados
     Professora: Valeria Delisandra Feltrim
-    Alunos: 
+    Alunos:
         Leonardo Venâncio Correia (RA: 129266)
         Murilo Luis Calvo Neves (RA: 129037)
 */
@@ -18,13 +18,13 @@ typedef enum {False, True} booleano;  // Enum booleano para deixar o código mai
 void inserir_espaco_na_led(int offset, short tamanho, FILE* arquivo_de_dados);
 
 // Funções de registros
-void inserir_registro(char* novo_registro, FILE* arquivo_de_dados);  
-void remover_registro(char* identificador, FILE* arquivo_de_dados);  
-void buscar_registro(char* identificador, FILE* arquivo_de_dados);  // A implementar
+void inserir_registro(char* novo_registro, FILE* arquivo_de_dados);
+void remover_registro(char* identificador, FILE* arquivo_de_dados);
+void buscar_registro(char* identificador, FILE* arquivo_de_dados);
 
 // Funções de modos de operações
-void impressao_da_led(FILE* arquivo_de_dados);  // A implementar
-void fazer_operacoes(FILE* arquivo_de_dados, FILE* arquivo_de_operacoes); 
+void impressao_da_led(FILE* arquivo_de_dados);
+void fazer_operacoes(FILE* arquivo_de_dados, FILE* arquivo_de_operacoes);
 
 int main(int argc, char *argv[]) {
     /*
@@ -38,7 +38,7 @@ int main(int argc, char *argv[]) {
         fprintf(stderr, "\nNao foi encontrado o arquivo de dados para leitura");
         exit(EXIT_FAILURE);
     }
-    
+
     if (argc == 3 && strcmp(argv[1], "-e") == 0) {
 
         printf("Modo de execucao de operacoes ativado ... nome do arquivo = %s\n", argv[2]);
@@ -49,7 +49,7 @@ int main(int argc, char *argv[]) {
     } else if (argc == 2 && strcmp(argv[1], "-p") == 0) {
 
         printf("Modo de impressao da LED ativado ...\n");
-        //impressao_da_led(arquivo_de_dados);
+        impressao_da_led(arquivo_de_dados);
 
     } else {
         fprintf(stderr, "Argumentos incorretos!\n");
@@ -86,7 +86,7 @@ void fazer_operacoes(FILE* arquivo_de_dados, FILE* arquivo_de_operacoes)
         fgets(parametro, 1024, arquivo_de_operacoes);
 
         int tamanho_parametro = strlen(parametro);
-        
+
         // fgets coloca a quebra de linha na string, com exceção nos casos em que a última linha termina o arquivo diretamente (sem criar nova linha)
         if (parametro[tamanho_parametro - 1] == '\n')
         {
@@ -98,21 +98,64 @@ void fazer_operacoes(FILE* arquivo_de_dados, FILE* arquivo_de_operacoes)
             case 'r':
                 printf("\n");
                 remover_registro(parametro, arquivo_de_dados);
-                break;  
-            case 'i': 
+                break;
+            case 'i':
                 printf("\n");
                 inserir_registro(parametro, arquivo_de_dados);
                 break;
             case 'b':
-                printf("\n"); 
-                //buscar_registro(parametro, arquivo_de_dados);
+                printf("\n");
+                buscar_registro(parametro, arquivo_de_dados);
                 break;
             default:
                 printf("\n");
                 printf("\nA operacao '%c' nao e uma operacao valida", comando);
                 break;
-        }  
+        }
     }
+}
+
+void buscar_registro(char* identificador, FILE* arquivo_de_dados) {
+
+    printf("\nBusca pelo registro de chave \"%s\"", identificador);
+
+    char identificador_atual[64];
+    char buffer[256];
+
+    fseek(arquivo_de_dados, sizeof(int), SEEK_SET);  // Garantindo que o ponteiro de entrada esteja no início do primeiro registro
+
+    short tamanho_registro;
+
+    int res = 1;
+
+    int posicao_do_ponteiro_de_leitura = sizeof(int);
+
+    do
+    {
+        fread(&tamanho_registro, sizeof(short), 1, arquivo_de_dados);
+
+        fread(buffer, sizeof(char), tamanho_registro, arquivo_de_dados);
+
+        buffer[tamanho_registro] = '\0';
+
+        ler_identificador_registro(buffer, identificador_atual);
+
+        int res = strcmp(identificador_atual, identificador);
+
+        // printf("\nComparando id \"%s\" com %s", identificador, identificador_atual);
+
+        if (res == 0)
+        {
+            printf("\n%s (%d bytes)", buffer, tamanho_registro);
+            printf("\nLocal: offset = %d bytes", posicao_do_ponteiro_de_leitura);
+            return;
+        }
+
+        posicao_do_ponteiro_de_leitura += sizeof(short) + tamanho_registro;
+
+    } while (0 == feof(arquivo_de_dados));
+
+    printf("\nO registro nao foi encontrado");
 }
 
 
@@ -120,7 +163,7 @@ void ler_identificador_registro(char *registro, char *nome)
 {
     /*
     Recupera a string que serve como identificador de um registro
-    
+
     Parâmetros:
         char* registro: String contendo o registro a ser lido
         char* nome: String que irá receber o identificador do registro
@@ -163,7 +206,7 @@ void inserir_espaco_na_led(int offset, short tamanho, FILE* arquivo_de_dados)
 {
     /*
     Insere um espaço novamente na LED de forma ordenada.
-    
+
     Parâmetros:
         int offset: O offset inicial de onde se inicia o espaço a ser inserido na LED
         short tamanho: O tamanho do local a ser inserido na LED (tamanho do registro + 2 bytes para anotá-lo)
@@ -177,7 +220,7 @@ void inserir_espaco_na_led(int offset, short tamanho, FILE* arquivo_de_dados)
     // Conectar na LED
     short tamanho_antigo = -1;
     int aponta_antigo = -1;
-    
+
     short tamanho_atual = -1;
     int aponta_atual = -1;
 
@@ -200,8 +243,8 @@ void inserir_espaco_na_led(int offset, short tamanho, FILE* arquivo_de_dados)
 
     aponta_atual = aponta_proximo;
     le_dados_led(aponta_atual, arquivo_de_dados, &tamanho_proximo, &aponta_proximo);
-    
-    while (aponta_proximo != -1 && tamanho_proximo > tamanho_para_registro) 
+
+    while (aponta_proximo != -1 && tamanho_proximo > tamanho_para_registro)
     {
         tamanho_antigo = tamanho_atual;
         tamanho_atual = tamanho_proximo;
@@ -223,7 +266,7 @@ void inserir_espaco_na_led(int offset, short tamanho, FILE* arquivo_de_dados)
         {
             fseek(arquivo_de_dados, 0, SEEK_SET);
         }
-        
+
         fwrite(&offset, sizeof(int), 1, arquivo_de_dados);
 
         fseek(arquivo_de_dados, offset + sizeof(short) + 1, SEEK_SET);
@@ -293,7 +336,7 @@ void inserir_registro(char* novo_registro, FILE* arquivo_de_dados)
             fseek(arquivo_de_dados, offset_atual_led, SEEK_SET); // Voltando para o íncio do local onde o registro deverá ser escrito
 
             printf("\nLocal de insercao: offset = %d bytes", offset_atual_led);
-            
+
             booleano sobrou_espaco_suficiente = False;
 
             // Escrevendo o novo registro
@@ -341,7 +384,7 @@ void remover_registro(char* identificador, FILE* arquivo_de_dados)
         char* identificador: string contendo o identificador do elemento a ser removido
         FILE* arquivo_de_dados: O arquivo de dados a ser trabalhado
     */
-    
+
     printf("\nRemocao do registro de chave \"%s\"", identificador);
 
     char identificador_atual[64];
@@ -356,7 +399,7 @@ void remover_registro(char* identificador, FILE* arquivo_de_dados)
     int posicao_do_ponteiro_de_leitura = sizeof(int);
 
     do
-    {   
+    {
         fread(&tamanho_registro, sizeof(short), 1, arquivo_de_dados);
 
         fread(buffer, sizeof(char), tamanho_registro, arquivo_de_dados);
@@ -378,4 +421,30 @@ void remover_registro(char* identificador, FILE* arquivo_de_dados)
     } while (0 == feof(arquivo_de_dados));
 
     printf("\nErro: o registro nao foi encontrado");
+}
+
+void impressao_da_led(FILE* arquivo_de_dados)
+{
+    printf("\n LED -> ");
+    int total_espacos_disponiveis = 0;
+
+    short tamanho_lido = 0;
+    int ponteiro_lido = 0;
+
+    fseek(arquivo_de_dados, 0, SEEK_SET);
+
+    fread(&ponteiro_lido, sizeof(int), 1, arquivo_de_dados);
+
+    while (ponteiro_lido != -1)
+    {
+        printf("[offset: %d", ponteiro_lido);
+        fseek(arquivo_de_dados, ponteiro_lido, SEEK_SET);
+        fread(&tamanho_lido, sizeof(short), 1, arquivo_de_dados);
+        printf(", tam: %d] -> ", tamanho_lido);
+        fseek(arquivo_de_dados, 1, SEEK_CUR);
+        fread(&ponteiro_lido, sizeof(int), 1, arquivo_de_dados);
+        total_espacos_disponiveis += 1;
+    }
+
+    printf("[offset: -1]\nTotal: %d tamanhos disponiveis", total_espacos_disponiveis);
 }
