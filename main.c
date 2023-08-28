@@ -116,7 +116,13 @@ void fazer_operacoes(FILE* arquivo_de_dados, FILE* arquivo_de_operacoes)
 }
 
 void buscar_registro(char* identificador, FILE* arquivo_de_dados) {
+    /*
+    Busca um registro no arquivo e mostra o resultado na saída padrão
 
+    Parâmetros:
+        char* identificador: String com o identificador
+        FILE* arquivo_de_dados: Descritor do arquivo de dados no qual será realizada a busca
+    */
     printf("\nBusca pelo registro de chave \"%s\"", identificador);
 
     char identificador_atual[64];
@@ -425,6 +431,12 @@ void remover_registro(char* identificador, FILE* arquivo_de_dados)
 
 void impressao_da_led(FILE* arquivo_de_dados)
 {
+    /*
+    Imprime os espaços disponíveis na LED
+
+    Parâmetros:
+        FILE* arquivo_de_dados: Arquivo de dados com a LED
+    */
     printf("\n LED -> ");
     int total_espacos_disponiveis = 0;
 
