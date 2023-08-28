@@ -115,6 +115,31 @@ void fazer_operacoes(FILE* arquivo_de_dados, FILE* arquivo_de_operacoes)
     }
 }
 
+void ler_identificador_registro(char *registro, char *nome)
+{
+    /*
+    Recupera a string que serve como identificador de um registro
+
+    Parâmetros:
+        char* registro: String contendo o registro a ser lido
+        char* nome: String que irá receber o identificador do registro
+    */
+
+    if (registro[0] == '*')
+    {
+        nome[0] = '\0';
+    }
+
+    int i = 0;
+    while (registro[i] != '|' && registro[i] != '\0')
+    {
+        nome[i] = registro[i];
+        i++;
+    }
+    nome[i] = '\0';
+}
+
+
 void buscar_registro(char* identificador, FILE* arquivo_de_dados) {
     /*
     Busca um registro no arquivo e mostra o resultado na saída padrão
@@ -162,31 +187,6 @@ void buscar_registro(char* identificador, FILE* arquivo_de_dados) {
     } while (0 == feof(arquivo_de_dados));
 
     printf("\nO registro nao foi encontrado");
-}
-
-
-void ler_identificador_registro(char *registro, char *nome)
-{
-    /*
-    Recupera a string que serve como identificador de um registro
-
-    Parâmetros:
-        char* registro: String contendo o registro a ser lido
-        char* nome: String que irá receber o identificador do registro
-    */
-
-    if (registro[0] == '*')
-    {
-        nome[0] = '\0';
-    }
-
-    int i = 0;
-    while (registro[i] != '|' && registro[i] != '\0')
-    {
-        nome[i] = registro[i];
-        i++;
-    }
-    nome[i] = '\0';
 }
 
 
